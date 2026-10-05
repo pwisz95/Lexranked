@@ -211,6 +211,25 @@ a profile is claimed or an email known). 400 `lexranked_invalid_claim` with
 `POST /claims/confirm` `{ token }` → `{ status: "pending_review" }`; 400 for
 an unknown, used or expired token. Responses are `no-store`.
 
+### Client reviews (API 1.20)
+`POST /reviews` · `POST /reviews/confirm` (frontend server only, same role as
+claims). Body `{ entityType, entityId, rating: 1–5, title?, body (40–2000
+chars, no links), name, email, serviceYear, client: true }` → **202**
+`{ status: "pending_email" }` (also for repeats: one review per email and
+profile). 400 `lexranked_invalid_review` with `data.field`, 404 unknown
+profile, 429 (5 per email / 20 per profile per day). The confirmation link
+goes to the frontend `/reviews/confirm/?token=…`; confirming moves the review
+to `pending_review`.
+`GET /editorial/reviews?status=` and `POST /editorial/reviews/{id}`
+`{ action: approve|reject, note? }` (editors, `edit_posts`). The reviewer's
+email is deleted when a review is moderated.
+Lawyer and firm details carry `clientReviews{count, average, items[{id, rating,
+title, body, author, serviceYear, publishedAt}]}` (approved reviews only;
+author is first name and last initial). Approved reviews are also recorded as
+`rating` and `review_count` evidence from the "LexRanked client reviews" source
+(type `lexranked_reviews`, tier 5), which the ranking engine scores like other
+review data; review data from a higher-tier platform takes precedence.
+
 ### `GET /search?q=`
 Name search across lawyers and firms (`q` 2–100 chars, `type=all|lawyer|law_firm`,
 `per_page` ≤ 20). Sends `X-Robots-Tag: noindex`; stricter rate limit.
@@ -319,6 +338,7 @@ See [research.md](research.md) for the semantics.
 | `POST /research/jobs/{id}/claims` 🔒 | `items[{entity_id, field_name, value, source_url and/or source_id, source_type, retrieved_at, confidence, method?: seed\|structured_data\|ai}]` (`ai` needs AI enabled; confidence capped at 0.6) | `{results[{index, claimId, duplicate}], applied{entityId: fields[]}, review[entityIds]}` |
 | `POST /research/jobs/{id}/verifications` 🔒 | `items[{entity_id, verification_type, status, source_url, source_type, source_id?, notes?}]` | `[{index, verificationId, status, downgraded, duplicate}]` |
 | `GET /research/jobs/{id}/review-candidates` 🔒 | `after`, `limit` | candidates in review + suggested profile (API 1.4) |
+| `POST /research/jobs/{id}/auto-publish` 🔒 | — | finish automatic publication of a completed job (idempotent: published profiles are left alone; missing sources, records and rankings are added) (API 1.19) |
 | `POST /research/jobs/{id}/candidate-notes` 🔒 | `items[{candidate_id, verdict: same\|different\|unsure, confidence, reason, model}]` | advisory AI notes; `[{index, candidateId, stored}]` (API 1.4, needs AI enabled) |
 | `POST /research/jobs/{id}/content-drafts` 🔒 | `{content_type: "ranking_content", target_id, content{summary, sections[{heading, paragraphs[{text}]}], faq[{question, answer}]}, facts[{id,label,value}], qa{status, issues[]}, model, prompt_version}` | `{draftId, qaStatus, updated}`; stored as a WordPress draft; QA status recomputed (API 1.4, needs AI enabled) |
 | `GET /research/candidates` | `status?`, `page`, `per_page` | Candidate list (+ `X-WP-Total`) |
