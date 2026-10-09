@@ -9,22 +9,30 @@ The plan's ranking URLs map to LexRanked rankings:
 only to rankings that exist; the guide template adds the matching rankings
 automatically (`frontend/lib/content/articles.ts`).
 
+The full list of pages to build (rankings, hubs, data pages, Florida
+guides, trust pages) and their order is in `docs/page-plan.md`.
+
 ## Editorial standard (every guide and all other content)
 
 These rules apply to guides and to every other text on the site: ranking,
 state, city and practice-area pages, FAQs and profile summaries.
 
-1. **Complete.** The guide answers its topic fully and every question a
-   reader searching for it would ask (the plan's "Questions" are the
-   minimum, plus "People also ask"-style follow-ups). No thin sections.
-2. **Answer first.** Directly under the H1 lead and under every H2/H3, the
-   first one or two sentences answer that heading; detail follows below.
+1. **Complete.** The text covers its topic 100%: it answers every question
+   a reader searching for it would ask (the plan's "Questions" are the
+   minimum, plus "People also ask"-style follow-ups), so the reader is left
+   with no further questions. No thin sections.
+2. **Answer first, in bold.** Directly under the H1 lead and under every
+   H2/H3, the first one or two sentences answer that heading concretely and
+   are set in bold; detail follows below. Important sentences and phrases
+   in the detail (deadlines, amounts, conditions, warnings) are also bold.
    FAQ answers also start with the direct answer.
 3. **Helpful elements.** Use them wherever they make the answer easier to
    use: a "short version" bullet list at the top, numbered steps,
    checklists, comparison tables (fee models, deadlines by claim type,
    process stages), and definition boxes. A guide without at least one list
-   or table needs a reason.
+   or table needs a reason. Every guide has a "short version" list and an
+   FAQ that answers the reader's remaining follow-up questions (usually 8–12).
+   As short as possible: nothing is added only to make a text longer.
 4. **Researched and true.** Every legal rule, number, deadline, fee or
    procedure is checked against a primary source (statute, court rule,
    state bar, agency) before publishing, with the current version and its
@@ -53,12 +61,40 @@ state, city and practice-area pages, FAQs and profile summaries.
    every other fact (rule 4); if nothing true and helpful can be added,
    nothing is invented.
 
+### Rankings start with their content
+
+A ranking is published only together with complete page text that meets
+rules 1–5 and 8: a summary, an answer under every heading, a table of the
+ranked lawyers' verified figures, the state's rules for the practice area,
+the local court, how to choose, further reading, sources and an FAQ.
+
+- Rankings created by autonomous research get this text automatically
+  (plugin 0.24.0, `rc-1`), before publication. It is built from the ranked
+  lawyers' facts and a verified state knowledge pack
+  (`src/Content/knowledge/{STATE}.json`: practice-area rules with statute
+  links, certification names, county and judicial circuit per city). Nothing
+  is written by AI and nothing is claimed that the facts do not show (for
+  example "all are board certified" only when every ranked lawyer is).
+- Without knowledge for the state, practice area or city the ranking stays
+  a draft (logged in the job) and is published by the next research run
+  once the pack covers it. **To open a new city or practice area, add its
+  verified facts to the pack first.**
+- Generated text follows every recalculation (counts, ranges, languages).
+  Text an editor writes (wp-admin, editorial API or an applied AI draft) is
+  kept and no longer regenerated; `POST /editorial/rankings/{id}/generate`
+  switches a ranking back to generated text.
+
 Who writes: guides need outside facts (statutes, deadlines, fees), so they
 are researched and written by the editorial assistant with web research and
 primary sources. The AI content generator (`content_generation` with
 `kind: article`) only writes from LexRanked's own data and is for guides
 about rankings and profiles; it also follows rules 1–3 and 8 (answer-first
-paragraphs, bullet lists, one distinctive point drawn from the facts).
+paragraphs, bullet lists, one distinctive point drawn from the facts;
+prompt `article/4`: a "short version" section first and 6–10 FAQs).
+
+Featured images (`lexranked-images`) are full illustrated scenes with the
+LexRanked owl in a real setting tied to the topic; pass per-post art
+direction with `--scenes scenes.json` so each image is specific to its guide.
 
 Status: ✅ published · 🟡 draft · blank = not started. Published so far:
 `personal-injury-claims-miami-florida-law` (Personal Injury, overlaps 11/15),

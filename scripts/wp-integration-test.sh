@@ -374,6 +374,12 @@ expect "the certification shows as an award on the profile" '.professional.award
 again="$(wp lexranked research-auto-publish "$AUTO_JOB")"
 check "re-applying the rules creates nothing twice" 'test("0 published, 2 kept as drafts, 0 verification records and 0 sources published, 0 rankings created")' "\"$(tail -n1 <<<"$again")\""
 check "a completed job's publication can be finished through the API, idempotently" '.published == 0 and .held == 2 and (.rankings | length) == 0' "$(curl -sS -u "researcher:$WORKER_PW" -X POST "$API/research/jobs/$AUTO_JOB/auto-publish")"
+wp user create itEditor editor@example.com --role=editor >/dev/null
+ED_PW="$(wp user application-password create itEditor it --porcelain | tail -1)"
+HIALEAH_RANKING="$(wp post list --post_type=lr_ranking --post_status=publish --title='Best Personal Injury Lawyers in Hialeah, Florida' --field=ID | tail -1)"
+expect "an automatically created ranking is published with complete generated page text" '(.summary | test("personal injury lawyers? in Hialeah, Florida")) and (.body | test("<h2>Florida rules to know</h2>")) and (.body | test("Eleventh Judicial Circuit")) and (.body | test("<h2>Sources</h2>")) and (.faq | length) >= 6 and .generated == true' "$API/editorial/rankings/$HIALEAH_RANKING" -u "itEditor:$ED_PW"
+expect "an editor's text replaces the generated text and is kept" '.summary == "Edited by hand." and .generated == false' "$API/editorial/rankings/$HIALEAH_RANKING" -u "itEditor:$ED_PW" -H 'Content-Type: application/json' -d '{"summary":"Edited by hand."}'
+expect "generated text can be restored on request" '.generated == true and (.summary | test("Hialeah"))' "$API/editorial/rankings/$HIALEAH_RANKING/generate" -u "itEditor:$ED_PW" -X POST
 # Remove the autonomous-research records so later sections see the same data as before.
 auto_ids="$(wp post list --post_type=lr_lawyer,lr_verification,lr_source --post_status=any --meta_key=_lr_research_job --meta_value="$AUTO_JOB" --field=ID --format=csv | tr -dc '0-9\n')"
 auto_ids+=" $(wp post list --post_type=lr_verification,lr_source --post_status=any --meta_key=_lr_research_job --meta_value="$awards_job" --field=ID --format=csv | tr -dc '0-9\n')"
@@ -383,8 +389,6 @@ wp post delete $auto_ids --force >/dev/null
 wp option update lexranked_settings '{"search_rate_per_minute":5}' --format=json >/dev/null
 
 echo "==> Editorial API (page text for rankings, hubs and profiles)"
-wp user create itEditor editor@example.com --role=editor >/dev/null
-ED_PW="$(wp user application-password create itEditor it --porcelain | tail -1)"
 ED_RANKING="$(curl -sS "$API/rankings?per_page=1" | jq -r '.[0].id')"
 ED_CITY="$(curl -sS "$API/cities" | jq -r '.[] | select(.slug == "miami") | .id')"
 ED_LAWYER="$(curl -sS "$API/lawyers?per_page=1" | jq -r '.[0].id')"
@@ -431,6 +435,12 @@ check "approved reviews are recorded as rating evidence from the LexRanked revie
 expect "an editor can withdraw a review" '.status == "rejected"' "$API/editorial/reviews/$REVIEW_ID" -u "itEditor:$ED_PW" -X POST -H 'Content-Type: application/json' -d '{"action":"reject"}'
 expect "a withdrawn review leaves the profile" '.clientReviews.count == 0' "$API/lawyers/avery-example-demo"
 check "its rating evidence is retired with it" '. == 0' "$(wp db query "SELECT COUNT(*) FROM wp_lr_claims WHERE entity_id = $AVERY_ID AND source_type = 'lexranked_reviews' AND review_status = 'approved'" --skip-column-names | tr -dc 0-9)"
+echo "==> Contact form (emailed to the editors, never stored)"
+CONTACT='{"name":"Jordan Taylor","email":"jordan@example.com","topic":"correction","page":"/lawyers/avery-example-demo/","message":"The years in practice on this profile look wrong; see the Florida Bar record."}'
+expect_status "contact messages cannot be sent anonymously" 401 "$API/contact" -X POST -H 'Content-Type: application/json' -d "$CONTACT"
+expect_status "an invalid contact message is rejected" 400 "$API/contact" -u "apiuser:$APP_PW" -X POST -H 'Content-Type: application/json' -d '{"name":"J","email":"x","topic":"sales","message":"short"}'
+expect "a contact message is accepted" '.status == "sent"' "$API/contact" -u "apiuser:$APP_PW" -X POST -H 'Content-Type: application/json' -d "$CONTACT"
+check "the message is emailed with the sender as reply-to" 'test("LexRanked contact.*Correction to a profile or ranking")' "$("${COMPOSE[@]}" exec -T wordpress sh -c 'tail -n1 /tmp/it-mail.log' | jq -Rs .)"
 
 echo "==> Entity resolution identifiers (Etap B)"
 check "research drafts are indexed by bar number" '. >= 1' "$(wp db query "SELECT COUNT(*) FROM wp_postmeta WHERE meta_key = '_lr_id_bar' AND meta_value = 'FL:1001'" --skip-column-names | tr -dc 0-9)"
@@ -636,6 +646,13 @@ if [[ -n "$FRONTEND" ]]; then
   page_has "review confirm page never acts on GET" "/reviews/confirm/?token=$(printf 'A%.0s' $(seq 1 43))" "Confirm my review"
   expect_status "advertising policy" 200 "$WEB/advertising/"
   page_has "advertising policy states the rule" "/advertising/" "Payment never changes a score"
+  page_has "about page" "/about/" "What is LexRanked?"
+  page_has "editorial policy" "/editorial-policy/" "What standard does every LexRanked page follow?"
+  page_has "privacy policy states the cookie rule" "/privacy/" "sets no cookies"
+  page_has "terms of use" "/terms/" "What are the rules for client reviews?"
+  page_has "legal disclaimer" "/disclaimer/" "is not a law firm"
+  page_has "contact page has the form" "/contact/" "Send message"
+  page_has "author profile" "/authors/ryan-mitchell/" "Is Ryan a lawyer?"
   sitemap="$(curl -sS "$WEB/sitemap.xml")"
   if grep -q "/advertising/" <<<"$sitemap" && ! grep -q "/claim/" <<<"$sitemap"; then pass "sitemap lists the policy, not claim pages"; else fail "sitemap commercial pages"; fi
   sitemap="$(curl -sS "$WEB/sitemap.xml")"

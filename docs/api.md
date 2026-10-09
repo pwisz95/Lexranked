@@ -211,6 +211,15 @@ a profile is claimed or an email known). 400 `lexranked_invalid_claim` with
 `POST /claims/confirm` `{ token }` → `{ status: "pending_review" }`; 400 for
 an unknown, used or expired token. Responses are `no-store`.
 
+### `POST /contact` (API 1.22, frontend server only)
+The contact form, relayed by the frontend server like claims and reviews
+(`lexranked_submit_claims`). Body `{name, email, topic: general|correction|lawyer|privacy|press, page?, message}`
+(20–5,000 characters). `202 {status: "sent"}`: the message is emailed to the
+editors (option `lexranked_contact_email`, default the site admin email) with
+the sender as Reply-To and is **not stored**. `400 lexranked_invalid_contact`
+with `errors{field: message}`; `429 lexranked_contact_limit` after 5 messages
+per sender email per day; `503` if the email cannot be sent.
+
 ### Client reviews (API 1.20)
 `POST /reviews` · `POST /reviews/confirm` (frontend server only, same role as
 claims). Body `{ entityType, entityId, rating: 1–5, title?, body (40–2000
@@ -360,8 +369,9 @@ every change is written to the audit log.
 
 | Route | Body | Result |
 |---|---|---|
-| `GET /editorial/rankings/{id}` | — | `{id, title, slug, status, summary, body, faq[], reviewedBy, reviewedAt}` (raw body) |
+| `GET /editorial/rankings/{id}` | — | `{id, title, slug, status, summary, body, faq[], reviewedBy, reviewedAt, generated}` (raw body; `generated`: text is generated and follows recalculations, API 1.21) |
 | `POST /editorial/rankings/{id}` | any of `title`, `slug`, `summary`, `body` (HTML, sanitized with `wp_kses_post`), `faq[{question, answer}]` (≤ 20), `reviewed_by`, `reviewed_at` (`YYYY-MM-DD`) | the ranking's editorial view; `""` clears a field |
+| `POST /editorial/rankings/{id}/generate` (API 1.21) | — | replaces the text with text generated from the ranked lawyers' facts and the state knowledge pack (see docs/content-plan.md); `422 lexranked_no_content` when complete text cannot be written. Saving text by hand turns generation off again |
 | `GET /editorial/terms/{location\|practice-area}/{id}` | — | `{id, taxonomy, name, slug, summary, body, faq[], reviewedBy, reviewedAt}` |
 | `POST /editorial/terms/{location\|practice-area}/{id}` | any of `summary`, `body`, `faq`, `reviewed_by`, `reviewed_at` | the hub's editorial view |
 | `POST /editorial/profiles/{id}` | `{summary}` (2–4 plain sentences) | `{id, name, summary}` |
