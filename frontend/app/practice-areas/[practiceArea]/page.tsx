@@ -8,6 +8,7 @@ import { hubEligibility } from "@/lib/content/eligibility";
 import { allRankings } from "@/lib/data/loaders";
 import { buildMetadata } from "@/lib/seo/metadata";
 import { getLawFirms, getLawyers, getPracticeAreas, getPlacements, getMarket } from "@/lib/wordpress/api";
+import { inSentence } from "@/lib/format";
 
 export const revalidate = 300;
 
@@ -43,7 +44,8 @@ export async function generateMetadata(props: PageProps<"/practice-areas/[practi
   if (!data?.eligibility.exists) return { robots: { index: false } };
   return buildMetadata({
     title: `Top-Rated ${data.area.name} Lawyers`,
-    description: `${data.area.name} lawyers and law firms ranked with the LexRank methodology: ${data.area.lawyerCount} profiles with scores, verification status and sources.`,
+    // The hub's answer-first summary makes the best snippet; the generic line is the fallback.
+    description: data.area.content?.summary ?? `${data.area.name} lawyers and law firms ranked with the LexRank methodology: ${data.area.lawyerCount} profiles with scores, verification status and sources.`,
     path: data.area.path,
     noindex: !data.eligibility.indexable,
   });
@@ -66,7 +68,7 @@ export default async function PracticeAreaPage(props: PageProps<"/practice-areas
       path={a.path}
       eyebrow="Practice area"
       about={[practiceAreaJsonLd({ name: a.name, slug: a.slug })]}
-      title={`Top-rated ${a.name.toLowerCase()} lawyers`}
+      title={`Top-rated ${inSentence(a.name)} lawyers`}
       lead={a.description || `${a.name} lawyers and law firms, ranked by location with the LexRank methodology.`}
       counts={a}
       featured={data.featured}
@@ -75,7 +77,7 @@ export default async function PracticeAreaPage(props: PageProps<"/practice-areas
       rankings={data.rankings}
       lawyers={data.lawyers}
       firms={data.firms}
-      lawyersHeading={`Highest-scoring ${a.name.toLowerCase()} lawyers`}
+      lawyersHeading={`Highest-scoring ${inSentence(a.name)} lawyers`}
       firmsHeading={`${a.name} law firms`}
     />
   );

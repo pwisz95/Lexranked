@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { JsonLd } from "@/components/JsonLd";
 import { PageHeader } from "@/components/PageHeader";
-import { componentsWithWeights, METHODOLOGY_PRINCIPLES } from "@/lib/methodology";
+import { FaqSection } from "@/components/ranking/RankingContent";
+import { componentsWithWeights, METHODOLOGY_PRINCIPLES, REVIEWS_QUESTION, reviewsStatement } from "@/lib/methodology";
 import { load } from "@/lib/data/loaders";
 import { formatDate, humanize, isoDate } from "@/lib/format";
 import { getDataQualityModel, getMethodology, getPageEligibilityModel, getScoreVersions } from "@/lib/wordpress/api";
@@ -66,7 +67,7 @@ export default async function MethodologyPage() {
         ]}
         eyebrow={versionLabel}
         title="How we rank lawyers"
-        lead="LexRank is a deterministic scoring methodology. The same data and methodology version always produce the same score — and no one can pay to change it."
+        lead="LexRank is a deterministic scoring methodology. The same data and methodology version always produce the same score - and no one can pay to change it."
       >
         {live.ok && (
           <div className="page-header__meta">
@@ -118,8 +119,8 @@ export default async function MethodologyPage() {
             )}
             <p>
               <strong>Every position is explained.</strong> Each ranking entry has a &ldquo;Why #N?&rdquo; panel built from its score
-              components — its strongest and weakest factors against the ranking average and what separates it from the entry above
-              — and, after a recalculation, what changed: its own data, its components, competitors that moved past it, or a new
+              components - its strongest and weakest factors against the ranking average and what separates it from the entry above
+              - and, after a recalculation, what changed: its own data, its components, competitors that moved past it, or a new
               methodology version. These explanations are computed from stored snapshots, never written by AI.
             </p>
           </section>
@@ -128,7 +129,7 @@ export default async function MethodologyPage() {
             <h2>{reviewsScored ? "Why star ratings alone are not enough" : "Client reviews"}</h2>
             {!reviewsScored && (
               <p>
-                <strong>Client reviews do not count towards {versionLabel}.</strong> Ratings from Google and other platforms may not be
+                <strong>{reviewsStatement(false)}</strong> This applies to {versionLabel}. Ratings from Google and other platforms may not be
                 stored, so LexRanked collects its own reviews: the reviewer confirms their email address, states they were a client, and
                 an editor reads every review before it is published on the profile. Until enough reviews exist to compare lawyers
                 fairly, rankings use only verifiable records; when reviews are scored, it will be in a new methodology version with the
@@ -153,7 +154,7 @@ export default async function MethodologyPage() {
           <section>
             <h2>Sources and evidence</h2>
             <p>
-              Every important fact — bar status, years of experience, ratings, practice areas — is stored with the source it came
+              Every important fact - bar status, years of experience, ratings, practice areas - is stored with the source it came
               from, when it was retrieved and how confident we are in it. When sources disagree, higher tiers take precedence:
             </p>
             <div className="table-wrap">
@@ -178,15 +179,15 @@ export default async function MethodologyPage() {
             </div>
             <p className="muted" style={{ fontSize: "0.92rem", marginTop: "1rem" }}>
               If no reliable source exists, the field stays empty. A missing input scores zero for its component and lowers the
-              data-quality component — it is never estimated.
+              data-quality component - it is never estimated.
             </p>
           </section>
 
           <section>
             <h2>Verification and freshness</h2>
             <p>
-              A profile is marked <strong>verified</strong> only when every required check — such as identity, license and bar status
-              for lawyers — has passed and none has expired. Each data point has a freshness target (for example 30 days for bar
+              A profile is marked <strong>verified</strong> only when every required check - such as identity, license and bar status
+              for lawyers - has passed and none has expired. Each data point has a freshness target (for example 30 days for bar
               status and 7 days for review data), and profiles show when their data was last verified.{" "}
               <Link href="/verified/">Read more about verification</Link>.
             </p>
@@ -195,8 +196,8 @@ export default async function MethodologyPage() {
           <section id="data-quality">
             <h2>Data quality (not a ranking)</h2>
             <p>
-              Every profile also shows a <strong>Data Quality</strong> percentage. It measures how well the profile is documented —
-              not how good the lawyer is — and it is <strong>not an input to the LexRank score</strong>. It is recalculated whenever
+              Every profile also shows a <strong>Data Quality</strong> percentage. It measures how well the profile is documented -
+              not how good the lawyer is - and it is <strong>not an input to the LexRank score</strong>. It is recalculated whenever
               the evidence changes and daily, because data ages.
             </p>
             {quality.ok && (
@@ -348,8 +349,22 @@ export default async function MethodologyPage() {
             </p>
           </section>
 
+          <FaqSection
+            items={[
+              { question: REVIEWS_QUESTION, answer: reviewsStatement(reviewsScored) },
+              {
+                question: "Can a lawyer pay for a better position?",
+                answer: "No. Claimed profiles, premium profiles and featured or sponsored placements are stored separately from the organic score, always labelled as paid, and never an input to the scoring engine.",
+              },
+              {
+                question: "What makes up the LexRank score?",
+                answer: `${components.map((c) => `${c.label} (${c.weight} points)`).join(", ")}, calculated only from facts with a cited source. The same data and methodology version always produce the same score.`,
+              },
+            ]}
+          />
+
           <section>
-            <h2>What a ranking is — and isn&apos;t</h2>
+            <h2>What a ranking is - and isn&apos;t</h2>
             <p>
               Rankings summarize publicly available and verified information to help you build a shortlist. They are not legal advice,
               an endorsement or a guarantee of outcome. LexRanked is not a law firm and not a lawyer referral service.
