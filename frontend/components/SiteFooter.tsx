@@ -42,6 +42,7 @@ export function SiteFooter() {
           <h2>LexRanked</h2>
           <ul>
             <li><Link href="/about/">About</Link></li>
+            <li><Link href="/data/">Data</Link></li>
             <li><Link href="/contact/">Contact</Link></li>
             <li><Link href="/privacy/">Privacy policy</Link></li>
             <li><Link href="/terms/">Terms of use</Link></li>
@@ -52,7 +53,7 @@ export function SiteFooter() {
       <div className="container site-footer__legal">
         <p>
           &copy; {new Date().getUTCFullYear()} {SITE_NAME}. Rankings are calculated with a published, deterministic methodology;
-          payment never changes an organic score. {SITE_NAME} is an information service — it is not a law firm, does not provide
+          payment never changes an organic score. {SITE_NAME} is an information service - it is not a law firm, does not provide
           legal advice and is not a lawyer referral service.
         </p>
       </div>
