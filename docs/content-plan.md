@@ -1,4 +1,4 @@
-# Guides content plan (1–100)
+# Guides content plan (1-100)
 
 Source: the owner's content plan (October 2026). Guides are WordPress posts
 published at `/articles/<slug>/`, where `<slug>` is the plan's URL without
@@ -17,6 +17,23 @@ guides, trust pages) and their order is in `docs/page-plan.md`.
 These rules apply to guides and to every other text on the site: ranking,
 state, city and practice-area pages, FAQs and profile summaries.
 
+**Client reviews and the score:** every page says it the same way (methodology v1.2):
+"Client reviews do not affect the LexRank score: neither star ratings nor the
+number of reviews is scored." The score is experience, practice-area
+relevance, awards on record such as board certification, professional
+credentials, data quality and location. The wording lives in
+`frontend/lib/methodology.ts` (`reviewsStatement`) and in
+`RankingContentBuilder::SCORE_PARTS` / `REVIEWS_NOTE`; change both together.
+
+**One of each on a ranking page:** one methodology and date section
+("About this ranking", from the page template), one FAQ, one list of data
+sources and one list of sources for the rules; the generated text never
+repeats them.
+
+**Dashes:** always a plain hyphen "-", never an en dash or em dash, in
+every text on the site, in the code and in the docs (also for ranges:
+"2-4", "1-3 sentences"). CI fails on an en or em dash in any tracked file.
+
 1. **Complete.** The text covers its topic 100%: it answers every question
    a reader searching for it would ask (the plan's "Questions" are the
    minimum, plus "People also ask"-style follow-ups), so the reader is left
@@ -31,7 +48,7 @@ state, city and practice-area pages, FAQs and profile summaries.
    checklists, comparison tables (fee models, deadlines by claim type,
    process stages), and definition boxes. A guide without at least one list
    or table needs a reason. Every guide has a "short version" list and an
-   FAQ that answers the reader's remaining follow-up questions (usually 8–12).
+   FAQ that answers the reader's remaining follow-up questions (usually 8-12).
    As short as possible: nothing is added only to make a text longer.
 4. **Researched and true.** Every legal rule, number, deadline, fee or
    procedure is checked against a primary source (statute, court rule,
@@ -46,7 +63,7 @@ state, city and practice-area pages, FAQs and profile summaries.
 6. **Featured image.** Every guide has its own featured image with the
    LexRanked owl, simple and without any text ([brand.md](brand.md)).
 7. **Structure.** One WordPress category (the plan's Category); a clear
-   title with the primary keyword; a 150–160 character excerpt that answers
+   title with the primary keyword; a 150-160 character excerpt that answers
    the question; internal links to related guides and the matching rankings
    (the template adds rankings automatically); update date set when facts
    are rechecked (see the plan's Update column).
@@ -61,10 +78,22 @@ state, city and practice-area pages, FAQs and profile summaries.
    every other fact (rule 4); if nothing true and helpful can be added,
    nothing is invented.
 
+### Hubs get generated text (plugin 0.29)
+
+Practice-area, city and state hubs get their text from the plugin
+(`HubContentBuilder`), built from the published rankings and the state
+knowledge pack: a summary that answers the page's question under the H1,
+then sections that each open with a bold answer (what the lawyer does, when
+you need one, the best lawyers and where, cost under Rule 4-1.5, state rules,
+board certification, how to choose, how we rank), guides, sources and a FAQ.
+Each practice area needs a `hub` block in the pack (what, matters, when,
+cost, questions); areas added over the API send it too. Hub text without an
+editor's changes follows every recalculation; text an editor saves is kept.
+
 ### Rankings start with their content
 
 A ranking is published only together with complete page text that meets
-rules 1–5 and 8: a summary, an answer under every heading, a table of the
+rules 1-5 and 8: a summary, an answer under every heading, a table of the
 ranked lawyers' verified figures, the state's rules for the practice area,
 the local court, how to choose, further reading, sources and an FAQ.
 
@@ -88,9 +117,9 @@ Who writes: guides need outside facts (statutes, deadlines, fees), so they
 are researched and written by the editorial assistant with web research and
 primary sources. The AI content generator (`content_generation` with
 `kind: article`) only writes from LexRanked's own data and is for guides
-about rankings and profiles; it also follows rules 1–3 and 8 (answer-first
+about rankings and profiles; it also follows rules 1-3 and 8 (answer-first
 paragraphs, bullet lists, one distinctive point drawn from the facts;
-prompt `article/4`: a "short version" section first and 6–10 FAQs).
+prompt `article/4`: a "short version" section first and 6-10 FAQs).
 
 Featured images (`lexranked-images`) are full illustrated scenes with the
 LexRanked owl in a real setting tied to the topic; pass per-post art
