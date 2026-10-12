@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import { hubEligibility, listingEligibility, profileEligibility, rankingEligibility } from "@/lib/content/eligibility";
 import { finderOptions, rankingScopeLabel, resolveRanking } from "@/lib/content/rankings";
 import { buildSitemap, STATIC_PATHS } from "@/lib/content/sitemap";
-import { formatDate, formatLocation, formatRating, formatScore, humanize, initials, pluralize } from "@/lib/format";
+import type { StateStatsDto } from "@/types/api";
+import { formatDate, formatLocation, formatRating, formatScore, humanize, inSentence, initials, pluralize } from "@/lib/format";
 import { firmSummary, lawyerSummary, rankingSummary } from "./fixtures/api";
 
 describe("eligibility", () => {
@@ -52,7 +53,7 @@ describe("ranking resolution", () => {
   it("builds finder options only from rankings that exist", () => {
     const opts = finderOptions([...rankings, rankingSummary(3, { isThin: true, path: "/rankings/texas/" })]);
     expect(opts.map((o) => o.path)).toEqual(["/rankings/florida/personal-injury/", "/rankings/florida/miami/personal-injury/"]);
-    expect(opts[0]).toMatchObject({ locationLabel: "Florida" });
+    expect(opts[0]).toMatchObject({ locationLabel: "All of Florida" });
     expect(opts[1]).toMatchObject({ locationLabel: "Miami, FL", practiceLabel: "Personal Injury" });
     expect(rankingScopeLabel(rankings[0]!)).toBe("Personal Injury · Miami, FL");
   });
@@ -96,6 +97,34 @@ describe("sitemap", () => {
     expect(urls([city(1), city(2), city(3)])).toContain("/cities/");
   });
 
+  it("lists the statistics data pages only when their figures are ready", () => {
+    const spread = { sample: 0, min: null, median: null, max: null };
+    const stats: StateStatsDto = {
+      version: "sd-1.0",
+      state: { slug: "florida", name: "Florida" },
+      lawyers: 10,
+      certified: 10,
+      multiCertified: 0,
+      spanish: 0,
+      cities: [],
+      practiceAreas: [],
+      certifications: [],
+      languages: { sample: 0, items: [] },
+      schools: { sample: 0, items: [] },
+      experience: { ...spread, buckets: [] },
+      calculatedAt: "2026-10-09T00:00:00Z",
+    };
+    const urls = (s: StateStatsDto | null) =>
+      buildSitemap({ lawyers: [], lawFirms: [], rankings: [], states: [], cities: [], practiceAreas: [], stats: s }).map((e) => e.url.replace("https://lexranked.com", ""));
+    expect(urls(null)).toContain("/data/florida-statutes-of-limitations/");
+    expect(urls(null)).not.toContain("/data/florida-board-certified-lawyers/");
+    expect(urls(stats)).toContain("/data/florida-board-certified-lawyers/");
+    // No lawyer lists Spanish: that page would be empty, so it is not listed.
+    expect(urls(stats)).not.toContain("/data/spanish-speaking-lawyers-florida/");
+    expect(urls({ ...stats, spanish: 3 })).toContain("/data/spanish-speaking-lawyers-florida/");
+    expect(new Set(urls(stats)).size).toBe(urls(stats).length);
+  });
+
   it("omits hubs whose real lawyers are below the minimum", () => {
     const map = buildSitemap({
       lawyers: [lawyerSummary(1), lawyerSummary(2, { isDemo: true }), lawyerSummary(3, { isDemo: true })],
@@ -110,6 +139,12 @@ describe("sitemap", () => {
 });
 
 describe("format", () => {
+  it("lowercases names inside a sentence but keeps acronyms", () => {
+    expect(inSentence("Condo and HOA")).toBe("condo and HOA");
+    expect(inSentence("DUI")).toBe("DUI");
+    expect(inSentence("Workers' Compensation")).toBe("workers' compensation");
+  });
+
   it("formats values for US readers and hides unknowns", () => {
     expect(formatDate("2026-09-23T19:14:23Z")).toBe("September 23, 2026");
     expect(formatDate(null)).toBeNull();
